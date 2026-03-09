@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>抽卡概率科普互动平台</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "微软雅黑", sans-serif;
+        }
+        body {
+            background-color: #f5f8ff;
+            color: #333;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #409eff;
+        }
+        .header h1 {
+            color: #409eff;
+            margin-bottom: 10px;
+        }
+        .header p {
+            color: #666;
+            font-size: 16px;
+        }
+        .process-nav {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .process-nav button {
+            padding: 10px 20px;
+            background-color: #409eff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        .process-nav button:hover {
+            background-color: #337ecc;
+        }
+        .process-nav button.active {
+            background-color: #67c23a;
+        }
+        .content {
+            background-color: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        .hidden {
+            display: none !important;
+        }
+        .demo-page p {
+            line-height: 1.8;
+            margin-bottom: 20px;
+            font-size: 16px;
+        }
+        .demo-page button {
+            padding: 10px 25px;
+            background-color: #67c23a;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .draw-card-area {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #fafafa;
+            border-radius: 8px;
+        }
+        .prediction-box {
+            background: #fff3e0;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border: 1px solid #ffd596;
+        }
+        /* 新增的选项按键样式 */
+        .prediction-options {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        .pred-btn {
+            padding: 10px 20px;
+            background-color: #fff;
+            color: #666;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.2s;
+        }
+        .pred-btn:hover {
+            border-color: #e6a23c;
+            color: #e6a23c;
+        }
+        .pred-btn.selected {
+            background-color: #fdf6ec;
+            border-color: #e6a23c;
+            color: #e6a23c;
+            font-weight: bold;
+        }
+        .current-prediction {
+            margin-top: 10px;
+            font-weight: bold;
+            color: #d35400;
+        }
+        .draw-buttons {
+            margin: 20px 0;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .draw-buttons button {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+            font-size: 18px;
+            transition: transform 0.1s;
+        }
+        .draw-buttons button:active {
+            transform: scale(0.98);
+        }
+        .btn-single { background-color: #409eff; }
+        .btn-multi { background-color: #67c23a; }
+        .btn-special { background-color: #f56c6c; }
+        
+        .draw-result {
+            font-size: 20px;
+            margin: 20px 0;
+            min-height: 30px;
+            padding: 15px;
+            background: #eef1f6;
+            border-radius: 5px;
+        }
+        .draw-result .ssr {
+            color: #f56c6c;
+            font-weight: bold;
+            font-size: 24px;
+        }
+        .guarantee-setting {
+            margin: 15px 0;
+            padding: 10px;
+            background: #f0f9eb;
+            border-radius: 5px;
+            display: inline-block;
+        }
+        .data-area h3 {
+            color: #409eff;
+            margin-bottom: 15px;
+            border-left: 4px solid #409eff;
+            padding-left: 10px;
+        }
+        .data-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .data-item {
+            background-color: #f0f7ff;
+            padding: 15px;
+            border-radius: 5px;
+            flex: 1;
+            min-width: 150px;
+            text-align: center;
+            border: 1px solid #d9ecff;
+        }
+        .data-item span {
+            display: block;
+            font-size: 28px;
+            color: #409eff;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+        .chart-area {
+            height: 350px;
+            margin-top: 20px;
+        }
+        .tips-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 25px rgba(0,0,0,0.3);
+            z-index: 100;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+        }
+        .tips-popup h4 {
+            color: #409eff;
+            margin-bottom: 15px;
+            font-size: 22px;
+        }
+        .tips-popup p {
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        .tips-popup button {
+            padding: 10px 30px;
+            background-color: #409eff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .mask {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.6);
+            z-index: 99;
+        }
+        .summary-page h3 {
+            color: #409eff;
+            margin: 20px 0 15px 0;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+        .summary-page p {
+            line-height: 1.8;
+            font-size: 16px;
+        }
+        .export-btn {
+            padding: 12px 25px;
+            background-color: #409eff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 30px;
+            font-size: 16px;
+        }
+        .highlight {
+            color: #f56c6c;
+            font-weight: bold;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
+</head>
+<body>
+    <div class="header">
+        <h1>抽卡概率科普互动平台</h1>
+        <p>核心理念：打破“概率=欧气”误区 | 见证伯努利试验与独立事件</p>
+    </div>
+
+    <div class="process-nav">
+        <button id="nav-demo" class="active" onclick="switchPage('demo')">1. 程序演示</button>
+        <button id="nav-gambler" onclick="switchPage('gambler')">2. 赌徒谬论挑战</button>
+        <button id="nav-compare" onclick="switchPage('compare')">3. 单抽 vs 多抽</button>
+        <button id="nav-hundred" onclick="switchPage('hundred')">4. 100抽真实体验</button>
+        <button id="nav-summary" onclick="switchPage('summary')">5. 总结收尾</button>
+    </div>
+
+    <div class="content">
+        <div id="page-demo" class="demo-page">
+            <h2>互动规则说明</h2>
+            <p>1. <strong>基础设定</strong>：本程序严格锁定 SSR 出卡概率为 <strong>1%</strong>。</p>
+            <p>2. <strong>核心概念</strong>：每一次抽卡都是一次<strong>伯努利试验</strong>，前一次的结果绝对不会影响下一次，它们是完全的<strong>独立事件</strong>。</p>
+            <p>3. <strong>互动流程</strong>：在后续环节中，请遵循 <strong>“输入预测 → 动手操作验证 → 对比理论数据”</strong> 的步骤。</p>
+            <button onclick="switchPage('gambler')">理解规则，进入挑战</button>
+        </div>
+
+        <div id="page-draw" class="hidden">
+            <h2 id="stage-title" style="text-align: center; margin-bottom: 20px; color: #409eff;">阶段挑战</h2>
+            
+            <!-- <div class="draw-card-area">
+                <div class="prediction-box">
+                    <p style="margin-bottom: 15px; color: #666;">请点选接下来的测试目标及对应理论概率：</p>
+                    <div class="prediction-options" id="prediction-options">
+                        <button class="pred-btn" onclick="selectPrediction(this, '下 1 抽命中 (理论概率: 1%)')">下 1 抽命中 (概率: 1%)</button>
+                        <button class="pred-btn" onclick="selectPrediction(this, '10 抽内出货 (理论概率: 9.56%)')">10 抽内出货 (概率: 9.56%)</button>
+                        <button class="pred-btn" onclick="selectPrediction(this, '100 抽全空 (理论概率: 36.6%)')">100 抽全空 (概率: 36.6%)</button>
+                    </div>
+                    <div class="current-prediction" id="display-prediction">当前预测：未选择</div>
+                </div> -->
+
+                <div class="guarantee-setting">
+                    <label>
+                        <input type="checkbox" id="guarantee-switch" onchange="toggleGuarantee()"> 
+                        开启 90抽硬保底模式（注意：这将改变独立事件的概率结构）
+                    </label>
+                </div>
+
+                <div class="draw-buttons" id="dynamic-controls">
+                    </div>
+
+                <div class="draw-result" id="draw-result">
+                    等待抽卡操作...
+                </div>
+            </div>
+
+            <div class="data-area">
+                <h3>实时数据追踪</h3>
+                <div class="data-list">
+                    <div class="data-item">累计抽卡<span id="stat-total">0</span></div>
+                    <div class="data-item">SSR 数量<span id="stat-ssr">0</span></div>
+                    <div class="data-item">实际出卡率<span id="stat-prob">0.00%</span></div>
+                    <div class="data-item">当前连黑<span id="stat-fail">0</span></div>
+                </div>
+                <div class="chart-area" id="probability-chart"></div>
+            </div>
+        </div>
+
+        <div id="page-summary" class="summary-page hidden">
+            <h2>数据复盘与总结</h2>
+            
+            <h3>你的预测与现实</h3>
+            <p>记录的预测：<span class="highlight" id="sum-prediction">未选择</span></p>
+            <p>实际的数据：在 <span class="highlight" id="sum-total">0</span> 次抽卡中，共获得 <span class="highlight" id="sum-ssr">0</span> 张 SSR，实际出卡率为 <span class="highlight" id="sum-prob">0.00%</span>。</p>
+
+            <h3>核心知识点归纳</h3>
+            <p>📌 <strong>赌徒谬论被打破</strong>：抽卡是<strong>独立事件</strong>。连续不中并不会“攒人品”，下一次出 SSR 的概率永远是 1%。</p>
+            <p>📌 <strong>多抽的真相</strong>：十连抽并没有改变单次 1% 的概率，只是通过增加试验次数（多做几次伯努利试验）提高了整体“至少命中一次”的概率。</p>
+            <p>📌 <strong>100抽的现实</strong>：100次 1% 概率的抽卡，一张 SSR 都抽不到的概率高达 <span class="highlight">36.6%</span>。这在数学上是非常正常的现象，并不是所谓的“号黑”。</p>
+            <p>📌 <strong>保底的意义</strong>：游戏厂商加入保底，正是为了截断独立事件带来的“无限连黑”极端情况，它人为改变了自然概率模型。</p>
+
+            <button class="export-btn" onclick="exportData()">导出互动数据报告</button>
+        </div>
+    </div>
+
+    <div class="tips-popup hidden" id="tips-popup">
+        <h4 id="tips-title">科学解析</h4>
+        <p id="tips-content"></p>
+        <button onclick="closeTips()">我明白了</button>
+    </div>
+    <div class="mask hidden" id="mask"></div>
+
+    <script>
+        // 核心状态数据
+        let state = {
+            totalDraws: 0,
+            ssrCount: 0,
+            consecutiveFails: 0,
+            prediction: "",
+            guaranteeEnabled: false,
+            currentPage: "demo",
+            chartData: { x: [], theory: [], actual: [] }
+        };
+
+        let chartInstance = null;
+
+        // 初始化图表
+        function initChart() {
+            if (!chartInstance) {
+                chartInstance = echarts.init(document.getElementById('probability-chart'));
+            }
+            chartInstance.setOption({
+                title: { text: "大数定律：实际概率向理论概率(1%)收敛", left: "center", textStyle: {fontSize: 14, fontWeight: 'normal'} },
+                xAxis: { type: "category", data: state.chartData.x, name: "抽卡次数" },
+                yAxis: { type: "value", name: "出卡率(%)", max: function(value) { return value.max > 5 ? value.max : 5; } },
+                series: [
+                    { name: "理论概率(1%)", type: "line", data: state.chartData.theory, itemStyle: { color: "#409eff" } },
+                    { name: "实际出卡率", type: "line", data: state.chartData.actual, itemStyle: { color: "#f56c6c" }, smooth: true }
+                ],
+                tooltip: { trigger: "axis" }
+            });
+        }
+
+        // 页面切换与动态按钮渲染
+        function switchPage(pageId) {
+            document.querySelectorAll('.process-nav button').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`nav-${pageId}`).classList.add('active');
+
+            document.getElementById('page-demo').classList.add('hidden');
+            document.getElementById('page-draw').classList.add('hidden');
+            document.getElementById('page-summary').classList.add('hidden');
+
+            state.currentPage = pageId;
+
+            if (pageId === 'demo') {
+                document.getElementById('page-demo').classList.remove('hidden');
+            } else if (pageId === 'summary') {
+                document.getElementById('page-summary').classList.remove('hidden');
+                updateSummary();
+            } else {
+                document.getElementById('page-draw').classList.remove('hidden');
+                renderStageControls(pageId);
+                setTimeout(() => { if(!chartInstance) initChart(); chartInstance.resize(); }, 100);
+            }
+        }
+
+        // 选项按键的点选逻辑
+        function selectPrediction(btnElement, val) {
+            // 移除其他按钮的选中状态
+            const buttons = document.querySelectorAll('.pred-btn');
+            buttons.forEach(btn => btn.classList.remove('selected'));
+            
+            // 激活当前点击的按钮
+            btnElement.classList.add('selected');
+            
+            // 后台静默记录状态，更新显示
+            state.prediction = val;
+            document.getElementById('display-prediction').textContent = "当前预测：" + val;
+        }
+
+        // 根据不同阶段渲染不同的操作面板
+        function renderStageControls(stage) {
+            const controls = document.getElementById('dynamic-controls');
+            const title = document.getElementById('stage-title');
+            controls.innerHTML = '';
+
+            if (stage === 'gambler') {
+                title.textContent = "阶段 2：赌徒谬论挑战";
+                controls.innerHTML = `
+                    <button class="btn-special" onclick="simulateBadLuck(50)">模拟 50 连抽不中</button>
+                    <button class="btn-single" onclick="executeDraw(1)">验证单抽</button>
+                `;
+                showPopup("赌徒谬论任务", "请先点击上方按钮选择全场的直觉预测。然后点击【模拟 50 连抽不中】，看看连续倒霉后，接下来的单抽概率会不会提升？");
+            } 
+            else if (stage === 'compare') {
+                title.textContent = "阶段 3：单抽 vs 多抽的数据对抗";
+                controls.innerHTML = `
+                    <button class="btn-single" onclick="executeDraw(1)">进行单抽</button>
+                    <button class="btn-multi" onclick="executeDraw(10)">进行 10 连抽</button>
+                `;
+                showPopup("单抽与多抽探讨", "试着交替使用单抽和十连抽。多抽能让你更容易看到SSR，但它改变了基础的1%概率吗？");
+            } 
+            else if (stage === 'hundred') {
+                title.textContent = "阶段 4：100抽不出SSR是正常现象吗？";
+                controls.innerHTML = `
+                    <button class="btn-single" onclick="executeDraw(1)">补抽(单抽)</button>
+                    <button class="btn-special" onclick="executeDraw(100)">一键完成 100 抽测试</button>
+                `;
+                showPopup("100抽挑战", "很多人觉得100抽不出SSR就是系统暗改。请点击【一键完成 100 抽】，我们用数学看看现实！");
+            }
+        }
+
+        // 保底开关
+        function toggleGuarantee() {
+            state.guaranteeEnabled = document.getElementById('guarantee-switch').checked;
+            if (state.guaranteeEnabled) {
+                showPopup("保底机制介入", "90抽硬保底已开启！注意：这破坏了纯粹的独立事件结构，是对玩家体验的数学妥协。");
+            }
+        }
+
+        // 模拟特定场景（如50连黑）
+        function simulateBadLuck(count) {
+            state.totalDraws += count;
+            state.consecutiveFails += count;
+            document.getElementById('draw-result').innerHTML = `系统已强行模拟 <span class="highlight">${count}</span> 次未中SSR的情景。接下来请进行抽卡！`;
+            updateStats();
+        }
+
+        // 核心抽卡逻辑
+        function executeDraw(times) {
+            let ssrThisRound = 0;
+            let resultHtml = "";
+
+            for (let i = 0; i < times; i++) {
+                state.totalDraws++;
+                let hit = false;
+
+                // 保底判定
+                if (state.guaranteeEnabled && state.consecutiveFails >= 89) {
+                    hit = true;
+                    resultHtml += `第 ${state.totalDraws} 抽：<span class="ssr">触发保底获得 SSR！</span><br>`;
+                } else {
+                    // 1% 概率独立判定
+                    hit = (Math.random() < 0.01);
+                }
+
+                if (hit) {
+                    ssrThisRound++;
+                    state.ssrCount++;
+                    state.consecutiveFails = 0;
+                    if(times === 1) resultHtml = `第 ${state.totalDraws} 抽：<span class="ssr">🎉 抽中 SSR！</span>`;
+                } else {
+                    state.consecutiveFails++;
+                    if(times === 1) resultHtml = `第 ${state.totalDraws} 抽：未中`;
+                }
+            }
+
+            if (times > 1) {
+                resultHtml = `本次进行 ${times} 连抽完毕。<br>共获得 <span class="ssr">${ssrThisRound}</span> 张 SSR。`;
+            }
+
+            document.getElementById('draw-result').innerHTML = resultHtml;
+            updateStats();
+            triggerStageLogic(times, ssrThisRound);
+        }
+
+        // 数据更新
+        function updateStats() {
+            document.getElementById('stat-total').textContent = state.totalDraws;
+            document.getElementById('stat-ssr').textContent = state.ssrCount;
+            document.getElementById('stat-fail').textContent = state.consecutiveFails;
+            
+            let actualProb = state.totalDraws === 0 ? 0 : (state.ssrCount / state.totalDraws * 100);
+            document.getElementById('stat-prob').textContent = actualProb.toFixed(2) + "%";
+
+            // 更新图表
+            state.chartData.x.push(state.totalDraws);
+            state.chartData.theory.push(1);
+            state.chartData.actual.push(actualProb.toFixed(2));
+            
+            if (chartInstance) {
+                chartInstance.setOption({
+                    xAxis: { data: state.chartData.x },
+                    series: [{ data: state.chartData.theory }, { data: state.chartData.actual }]
+                });
+            }
+        }
+
+        // 根据阶段触发特定科普提示
+        function triggerStageLogic(drawTimes, ssrGot) {
+            // 赌徒谬论阶段验证提示
+            if (state.currentPage === 'gambler' && drawTimes === 1) {
+                if (ssrGot > 0) {
+                    showPopup("独立事件验证", "恭喜抽中！但请记住，这是1%概率碰巧命中，绝不是因为前面连黑了50次系统给的补偿（除非触发保底）。");
+                } else if (state.consecutiveFails % 10 === 0) {
+                    showPopup("赌徒谬论陷阱", `已经连续 ${state.consecutiveFails} 次没中了！直觉告诉你下次大概率会中？错！下一次的概率依旧是死死的 1%！这就是独立事件。`);
+                }
+            }
+            
+            // 单抽vs多抽阶段提示
+            if (state.currentPage === 'compare' && drawTimes === 10) {
+                showPopup("多抽的数学原理", `十连抽中了 ${ssrGot} 张？十连抽至少中 1 张的理论概率是 1 - (0.99)^10 ≈ 9.56%。多抽只是增加了试验频次，单抽的概率并没有翻倍！`);
+            }
+
+            // 100抽挑战阶段提示
+            if (state.currentPage === 'hundred' && drawTimes === 100) {
+                if (ssrGot === 0) {
+                    showPopup("残酷但科学的现实", "100次全空！这不是由于你的运气极差。根据伯努利试验公式，100次 1% 概率全不中的概率是 (0.99)^100 ≈ 36.6%。超过三分之一的人都会面临这个结果，这就是为什么游戏需要加入保底机制！");
+                } else {
+                    showPopup("符合预期的结果", `100抽出了 ${ssrGot} 张SSR。100抽至少出1张的概率约为 63.4%。你可以多试几次“一键100抽”，观察全空的出现频率是否在三分之一左右。`);
+                }
+            }
+        }
+
+        // 更新总结页
+        function updateSummary() {
+            document.getElementById('sum-prediction').textContent = state.prediction || "未选择";
+            document.getElementById('sum-total').textContent = state.totalDraws;
+            document.getElementById('sum-ssr').textContent = state.ssrCount;
+            let prob = state.totalDraws === 0 ? "0.00%" : (state.ssrCount / state.totalDraws * 100).toFixed(2) + "%";
+            document.getElementById('sum-prob').textContent = prob;
+        }
+
+        // 弹窗控制
+        function showPopup(title, content) {
+            document.getElementById('tips-title').textContent = title;
+            document.getElementById('tips-content').textContent = content;
+            document.getElementById('tips-popup').classList.remove('hidden');
+            document.getElementById('mask').classList.remove('hidden');
+        }
+
+        function closeTips() {
+            document.getElementById('tips-popup').classList.add('hidden');
+            document.getElementById('mask').classList.add('hidden');
+        }
+
+        // 导出数据
+        function exportData() {
+            const dataStr = JSON.stringify(state, null, 2);
+            const blob = new Blob([dataStr], { type: "application/json" });
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            a.download = "抽卡科学验证报告.json";
+            a.click();
+            URL.revokeObjectURL(a.href);
+        }
+
+        // 响应式图表
+        window.addEventListener('resize', () => { if(chartInstance) chartInstance.resize(); });
+    </script>
+</body>
+</html>
