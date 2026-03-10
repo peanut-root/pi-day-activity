@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>抽卡概率科普互动平台</title>
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
+
     <style>
         * {
             margin: 0;
@@ -15,7 +21,7 @@
             background-color: #f5f8ff;
             color: #333;
             padding: 20px;
-            max-width: 1400px; /* 加宽一点以适应分栏 */
+            max-width: 1400px; 
             margin: 0 auto;
         }
         .header {
@@ -158,7 +164,7 @@
             display: inline-block;
         }
 
-        /* 左右分栏布局：左侧主数据区，右侧快照区 */
+        /* 左右分栏布局：左侧主数据区，右侧公式+快照区 */
         .data-layout {
             display: flex;
             gap: 20px;
@@ -169,8 +175,8 @@
             min-width: 0;
         }
         .data-sidebar {
-            flex: 1;
-            min-width: 300px;
+            flex: 1.2; /* 给公式区稍微多一点宽度 */
+            min-width: 350px;
             background: #f9f9f9;
             border: 1px solid #ebeef5;
             border-radius: 8px;
@@ -183,6 +189,24 @@
             text-align: center;
             border-bottom: 1px dashed #dcdfe6;
             padding-bottom: 10px;
+        }
+
+        /* 数学公式面板样式 */
+        .math-panel-content {
+            background: #ecf5ff;
+            border: 1px solid #b3d8ff;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 25px;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #303133;
+        }
+        .math-panel-content p {
+            margin-bottom: 10px;
+        }
+        .katex-display {
+            margin: 10px 0 !important; /* 调整公式间距 */
         }
 
         .data-area h3 {
@@ -289,7 +313,6 @@
         .highlight { color: #f56c6c; font-weight: bold; }
 
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
 </head>
 <body>
     <div class="header">
@@ -310,7 +333,7 @@
             <h2>互动规则说明</h2>
             <p>1. <strong>基础设定</strong>：本程序严格锁定 SSR 出卡概率为 <strong>1%</strong>。</p>
             <p>2. <strong>核心概念</strong>：每一次抽卡都是一次<strong>伯努利试验</strong>，前一次的结果绝对不会影响下一次，它们是完全的<strong>独立事件</strong>。</p>
-            <p>3. <strong>互动流程</strong>：在后续环节中，请遵循 <strong>“动手操作验证 → 对比理论数据”</strong> 的步骤。</p>
+            <p>3. <strong>互动流程</strong>：在后续环节中，请遵循 <strong>“输入预测 → 动手操作验证 → 对比理论数据”</strong> 的步骤。</p>
             <button onclick="switchPage('gambler')">理解规则，进入挑战</button>
         </div>
 
@@ -352,6 +375,10 @@
                 </div>
                 
                 <div class="data-sidebar">
+                    <h3 style="color: #e6a23c; border-bottom: 1px solid #fdf6ec;">科学原理解析</h3>
+                    <div id="math-formula-area" class="math-panel-content">
+                        </div>
+
                     <h3>历史场次快照 (前3组)</h3>
                     <div id="snapshots-container">
                         </div>
@@ -513,7 +540,6 @@
             chartInstance.setOption({
                 title: { text: "大数定律：实际概率向理论概率收敛", left: "center", textStyle: {fontSize: 14, fontWeight: 'normal'} },
                 xAxis: { type: "category", data: state.chartData.x, name: "抽卡次数" },
-                // 核心修改：将默认最高设为 2.5，如果超过 2.5 则动态延展
                 yAxis: { type: "value", name: "出卡率(%)", max: function(value) { return value.max > 2.5 ? value.max : 2.5; } },
                 series: [
                     { name: "理论概率(基准线)", type: "line", data: state.chartData.theory, itemStyle: { color: "#409eff" }, step: 'end' },
@@ -522,6 +548,59 @@
                 tooltip: { trigger: "axis" },
                 animation: false 
             });
+        }
+
+        // 动态更新数学公式面板
+        function updateStageMath() {
+            let mathHtml = '';
+            
+            // 根据阶段渲染基础公式
+            if (state.currentPage === 'gambler') {
+                mathHtml += `<p><strong>【独立事件模型】</strong></p>
+                             <p>前一次的结果绝对不会影响后一次。无论连续未中多少次，下一次命中的条件概率恒定为：</p>
+                             $$P(\\text{命中} \\mid \\text{连续失败}) = 1\\%$$`;
+            } else if (state.currentPage === 'compare') {
+                mathHtml += `<p><strong>【对立事件模型 (多抽)】</strong></p>
+                             <p>十连抽（即进行10次独立的伯努利试验），至少命中1次的概率，等于1减去全空的概率：</p>
+                             $$P(\\ge 1) = 1 - (1 - 0.01)^{10}$$
+                             $$P(\\ge 1) \\approx 9.56\\%$$`;
+            } else if (state.currentPage === 'hundred') {
+                mathHtml += `<p><strong>【百抽全空的数学必然】</strong></p>
+                             <p>进行 100 次独立抽卡，一张 SSR 都没有的概率其实非常高：</p>
+                             $$P(0) = (1 - 0.01)^{100}$$
+                             $$P(0) \\approx 36.6\\%$$
+                             <p style="color:#f56c6c; font-size:12px; margin-top:5px;">*结论：超过三分之一的玩家会经历百抽全空，这是机制设计的原罪，非关运气。</p>`;
+            } else {
+                mathHtml += `<p><strong>【伯努利试验】</strong></p>
+                             <p>单次概率模型：</p>
+                             $$P(\\text{SSR}) = 1\\%$$
+                             $$P(\\text{未中}) = 99\\%$$`;
+            }
+
+            // 如果开启了保底，在下方追加期望公式
+            if (state.guaranteeEnabled) {
+                mathHtml += `<hr style="margin: 15px 0; border: 0; border-top: 1px dashed #dcdfe6;">
+                             <p><strong>【保底机制下的数学期望】</strong></p>
+                             <p>加入90抽强保底后，平均出卡抽数 $E$ 被强行降低：</p>
+                             $$E = \\sum_{k=1}^{89} k(0.99)^{k-1}(0.01) + 90(0.99)^{89}$$
+                             $$E \\approx 59.53 \\text{ 抽}$$
+                             <p>综合出卡率跃升：</p>
+                             $$P_{\\text{综合}} = \\frac{1}{E} \\approx 1.68\\%$$`;
+            }
+
+            const mathArea = document.getElementById('math-formula-area');
+            if (mathArea) {
+                mathArea.innerHTML = mathHtml;
+                // 调用 KaTeX 渲染公式
+                if (window.renderMathInElement) {
+                    renderMathInElement(mathArea, {
+                        delimiters: [
+                            {left: "$$", right: "$$", display: true},
+                            {left: "$", right: "$", display: false}
+                        ]
+                    });
+                }
+            }
         }
 
         function switchPage(pageId) {
@@ -543,6 +622,7 @@
             } else {
                 document.getElementById('page-draw').classList.remove('hidden');
                 renderStageControls(pageId);
+                updateStageMath(); // 更新对应阶段的数学公式
                 setTimeout(() => { if(!chartInstance) initChart(); chartInstance.resize(); }, 100);
             }
         }
@@ -587,6 +667,7 @@
         function toggleGuarantee() {
             state.guaranteeEnabled = document.getElementById('guarantee-switch').checked;
             saveToCache();
+            updateStageMath(); // 开关保底时，实时刷新数学公式
         }
 
         function simulateBadLuck(count) {
