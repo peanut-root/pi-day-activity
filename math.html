@@ -8,7 +8,10 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+    
     <script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
 
     <style>
         * {
@@ -175,7 +178,7 @@
             min-width: 0;
         }
         .data-sidebar {
-            flex: 1.2; /* 给公式区稍微多一点宽度 */
+            flex: 1.2; 
             min-width: 350px;
             background: #f9f9f9;
             border: 1px solid #ebeef5;
@@ -202,12 +205,8 @@
             line-height: 1.6;
             color: #303133;
         }
-        .math-panel-content p {
-            margin-bottom: 10px;
-        }
-        .katex-display {
-            margin: 10px 0 !important; /* 调整公式间距 */
-        }
+        .math-panel-content p { margin-bottom: 10px; }
+        .katex-display { margin: 10px 0 !important; }
 
         .data-area h3 {
             color: #409eff;
@@ -312,6 +311,72 @@
         .reset-btn:hover { background-color: #f78989; }
         .highlight { color: #f56c6c; font-weight: bold; }
 
+        .mask {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.6);
+            z-index: 99;
+        }
+
+        /* 🌟 新增：SSR专属金光闪闪庆祝弹窗样式 */
+        .celebration-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.5);
+            background: linear-gradient(135deg, #fffcf0 0%, #ffffff 100%);
+            border: 5px solid #f39c12;
+            padding: 50px 40px;
+            border-radius: 20px;
+            box-shadow: 0 15px 50px rgba(243, 156, 18, 0.4);
+            z-index: 200;
+            text-align: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55); /* Q弹动画效果 */
+            min-width: 450px;
+        }
+        .celebration-popup.show {
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
+            visibility: visible;
+        }
+        .celebration-popup h2 {
+            color: #e6a23c;
+            font-size: 42px;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(230, 162, 60, 0.2);
+            letter-spacing: 2px;
+        }
+        .celebration-popup p {
+            font-size: 22px;
+            color: #d35400;
+            margin-bottom: 35px;
+            font-weight: bold;
+        }
+        .celebration-popup button {
+            padding: 15px 40px;
+            background: linear-gradient(to right, #f39c12, #e67e22);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 20px;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(230, 126, 34, 0.4);
+            transition: transform 0.1s, box-shadow 0.2s;
+        }
+        .celebration-popup button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(230, 126, 34, 0.6);
+        }
+        .celebration-popup button:active {
+            transform: translateY(1px);
+        }
+
     </style>
 </head>
 <body>
@@ -409,6 +474,14 @@
                 <button class="reset-btn" onclick="resetData()">保存快照并清空重置场次</button>
             </div>
         </div>
+    </div>
+
+    <div class="mask hidden" id="mask"></div>
+
+    <div class="celebration-popup" id="celeb-popup">
+        <h2>🎉 金光闪闪！出 SSR 啦！ 🎉</h2>
+        <p id="celeb-text">恭喜你，单抽出奇迹！</p>
+        <button onclick="closeCelebration()">收下 SSR 继续测试</button>
     </div>
 
     <script>
@@ -550,11 +623,9 @@
             });
         }
 
-        // 动态更新数学公式面板
         function updateStageMath() {
             let mathHtml = '';
             
-            // 根据阶段渲染基础公式
             if (state.currentPage === 'gambler') {
                 mathHtml += `<p><strong>【独立事件模型】</strong></p>
                              <p>前一次的结果绝对不会影响后一次。无论连续未中多少次，下一次命中的条件概率恒定为：</p>
@@ -577,7 +648,6 @@
                              $$P(\\text{未中}) = 99\\%$$`;
             }
 
-            // 如果开启了保底，在下方追加期望公式
             if (state.guaranteeEnabled) {
                 mathHtml += `<hr style="margin: 15px 0; border: 0; border-top: 1px dashed #dcdfe6;">
                              <p><strong>【保底机制下的数学期望】</strong></p>
@@ -591,7 +661,6 @@
             const mathArea = document.getElementById('math-formula-area');
             if (mathArea) {
                 mathArea.innerHTML = mathHtml;
-                // 调用 KaTeX 渲染公式
                 if (window.renderMathInElement) {
                     renderMathInElement(mathArea, {
                         delimiters: [
@@ -622,7 +691,7 @@
             } else {
                 document.getElementById('page-draw').classList.remove('hidden');
                 renderStageControls(pageId);
-                updateStageMath(); // 更新对应阶段的数学公式
+                updateStageMath(); 
                 setTimeout(() => { if(!chartInstance) initChart(); chartInstance.resize(); }, 100);
             }
         }
@@ -667,7 +736,7 @@
         function toggleGuarantee() {
             state.guaranteeEnabled = document.getElementById('guarantee-switch').checked;
             saveToCache();
-            updateStageMath(); // 开关保底时，实时刷新数学公式
+            updateStageMath(); 
         }
 
         function simulateBadLuck(count) {
@@ -684,6 +753,7 @@
             updateStats();
         }
 
+        // 🌟 核心：控制出金庆祝的逻辑
         function executeDraw(times) {
             let ssrThisRound = 0;
             let resultHtml = "";
@@ -725,6 +795,47 @@
             });
 
             updateStats();
+
+            // 🎯 条件触发：如果有SSR产生，且不是“1000抽”的疯狂验证，就弹窗放礼炮！
+            if (ssrThisRound > 0 && times !== 1000) {
+                showCelebration(ssrThisRound, times);
+            }
+        }
+
+        // 显示庆祝特效
+        function showCelebration(ssrCount, times) {
+            document.getElementById('celeb-popup').classList.add('show');
+            document.getElementById('mask').classList.remove('hidden');
+            
+            // 动态判定文案
+            let text = "";
+            if (times === 1) {
+                text = "太好运了，单抽出奇迹！";
+            } else {
+                text = `欧气爆发！在本次 ${times} 连抽中获得了 ${ssrCount} 张 SSR！`;
+            }
+            if (ssrCount >= 2) {
+                text = `🔥🔥 双黄蛋/多黄蛋预警！你竟然在 ${times} 连抽中狂揽 ${ssrCount} 张 SSR！`;
+            }
+            document.getElementById('celeb-text').textContent = text;
+
+            // 调用礼炮特效（中间大爆+两侧小爆）
+            if (typeof confetti === 'function') {
+                confetti({
+                    particleCount: 200,
+                    spread: 120,
+                    origin: { y: 0.5 },
+                    zIndex: 1000 // 确保在最前面
+                });
+                setTimeout(() => confetti({ particleCount: 100, angle: 60, spread: 80, origin: { x: 0, y: 0.8 }, zIndex: 1000 }), 250);
+                setTimeout(() => confetti({ particleCount: 100, angle: 120, spread: 80, origin: { x: 1, y: 0.8 }, zIndex: 1000 }), 400);
+            }
+        }
+
+        // 关闭庆祝弹窗
+        function closeCelebration() {
+            document.getElementById('celeb-popup').classList.remove('show');
+            document.getElementById('mask').classList.add('hidden');
         }
 
         function renderDOMStats() {
